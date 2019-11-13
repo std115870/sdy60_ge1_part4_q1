@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>SDY60, GE1, Part 4, Q1</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" ></script>
+    
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+		}
+		#map {
+			width: 600px;
+			height: 400px;
+		}
+        .button {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+	</style>
+
+	<style>body { padding: 0; margin: 0; } #map { height: 100%; width: 100vw; }</style>
+</head>
+<body>
+
+<div id='map'></div>
+<script>
+    var posIcon = L.icon({
+    iconUrl: 'my-icon.png',
+    iconSize: [35, 45],
+    });
+    var color='red';
+    var map = L.map('map').fitWorld();
+    var allLocations=[];
+    
+	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+		maxZoom: 18,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		id: 'mapbox.streets'
+	}).addTo(map);
+    
+    function processData(allText) {
+             var allTextLines = allText.split(/\r\n|\n/);
+             var headers = allTextLines[0].split(',');
+             var lines = [];
+
+             for (var i=1; i<allTextLines.length; i++) {
+                 var data = allTextLines[i].split(',');
+                 lines.push(data);
+                 //if (data.length == headers.length) {
+                 //    var tarr = [];
+                //     for (var j=0; j<headers.length; j++) {
+                //         tarr.push(headers[j]+":"+data[j]);
+                //     }
+                //     lines.push(tarr);
+                 //}
+             }
+             alert(lines);
+         }
+
+	function onLocationFound(e) {
+        //var userLocation = prompt("Παρακαλώ εισάγετε τοποθεσία");
+        var singleLocation=[];
+		var radius = e.accuracy / 6;
+        var userLat=e.latlng.lat;
+        var userLong=e.latlng.lng;
+        var userText = prompt("Παρακαλώ εισάγετε πληροφορία για την τοποθεσία:");
+        var userImage = prompt("Παρακαλώ δώστε ένα html link για εικόνα:");
+        var popContent = "<!DOCTYPE html><html><body><p>"+userText+"<p><img src=\""+userImage+"\"></body></html>";
+		L.marker(e.latlng).addTo(map).bindPopup(popContent, {maxWidth: "auto"}).openPopup();
+        
+
+		L.circle(e.latlng, radius).addTo(map);
+        singleLocation.push(e.latlng.lat);
+        singleLocation.push(e.latlng.lng);
+        singleLocation.push(userText);
+        singleLocation.push(userImage);
+        window.allLocations.push(singleLocation)
+        
+        $(document).ready(function() {
+        $.ajax({
+        type: "GET",
+        url: "data.csv",
+        dataType: "text",
+        contentType: "text/csv; charset=utf-8",
+        error: function() {
+            alert('Error retrieving csv file');
+        },
+        success: function(data) {processData(data);}
+     });
+});
+            
+     }
+
+	function onLocationError(e) {
+        window.color='blue';
+        alert("Η εφαρμογή δεν έχει πρόσβαση στην τρέχουσα τοποθεσία σας, παρακαλώ κάντε double click στην τρέχουσα τοποθεσία");
+        onMapClick;
+	}
+
+	function onMapClick(e) {
+            var singleLocation=[];
+            var radius = e.accuracy / 6;
+            var userLat=e.latlng.lat;
+            var userLong=e.latlng.lng;
+            var userText = prompt("Παρακαλώ εισάγετε πληροφορία για την τοποθεσία:");
+            var userImage = prompt("Παρακαλώ δώστε ένα html link για εικόνα:");
+            singleLocation.push(e.latlng.lat);
+            singleLocation.push(e.latlng.lng);
+            singleLocation.push(userText);
+            singleLocation.push(userImage);
+            window.allLocations.push(singleLocation)
+            var popContent = "<!DOCTYPE html><html><body><p>"+userText+"<p><img src=\""+userImage+"\"></body></html>";
+            if (window.color=='red') {L.marker(e.latlng, {icon: posIcon}).addTo(map).bindPopup(popContent, {maxWidth: "auto"}).openPopup();
+            }
+            if (window.color=='blue') {
+                L.marker(e.latlng).addTo(map).addTo(map).bindPopup(popContent, {maxWidth: "auto"}).openPopup();
+                
+                $(document).ready(function() {
+                    $.ajax({
+                             type: "GET",
+                             url: "babis.csv",
+                             dataType: "text",
+                             contentType: "text/csv; charset=utf-8",
+                             error: function() {alert('Error retrieving csv file');},
+                             success: function(data) {processData(data);}
+                     });
+                 });
+             }
+            window.color='red';
+            
+	}
+	map.on('dblclick', onMapClick);
+	map.on('locationfound', onLocationFound);
+	map.on('locationerror', onLocationError);
+	map.locate({setView: true, maxZoom: 16});
+    
+</script>
+
+
+
+</body>
+</html>
